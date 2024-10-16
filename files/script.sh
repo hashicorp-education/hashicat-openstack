@@ -1,19 +1,30 @@
 #!/bin/bash
 
 #### SWAP
-sudo fallocate -l 8G /swapfile
+sudo fallocate -l 4G /swapfile
 sudo chmod 600 /swapfile
 sudo mkswap /swapfile
 sudo swapon /swapfile
 
 #### Tool install
-sudo apt-get update
-sudo add-apt-repository ppa:deadsnakes/ppa -y
-sudo apt install git bridge-utils net-tools python3.10 -y
-sudo apt install python3-apt python3-distutils -y
+sudo apt update -y
 
-sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.8 1
-sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 2
+# sudo apt install software-properties-common -y
+# sudo add-apt-repository ppa:deadsnakes/ppa -y
+# sudo apt update -y
+
+# sudo apt install git bridge-utils net-tools python3.9 -y
+# sudo apt install python3.9-distutils python3.9-venv -y
+# sudo apt upgrade python3-rtslib-fb targetcli-fb -y
+
+# sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.8 1
+# sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.9 2
+
+curl -sS https://bootstrap.pypa.io/get-pip.py | python3
+
+cd /usr/lib/python3/dist-packages
+sudo cp apt_pkg.cpython-38-x86_64-linux-gnu.so apt_pkg.so
+cd -
 
 #### Delete Mysql
 apt-get purge mysql-server
@@ -27,6 +38,8 @@ echo "stack ALL=(ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/stack
 sudo chmod 755 /opt/stack
 
 #### Virtual floating(public) ip
+sudo apt-get update -y
+sudo apt-get install bridge-utils -y
 sudo brctl addbr mybr0
 sudo ifconfig mybr0 192.168.100.1 netmask 255.255.255.0 up
 sudo ip link set mybr0 up
@@ -36,7 +49,7 @@ sudo iptables -I FORWARD -i mybr0 -j ACCEPT
 sudo iptables -I FORWARD -o mybr0 -j ACCEPT
 
 sudo iptables -t nat -I POSTROUTING -s 192.168.100.0/24 -j MASQUERADE
-sudo ip addr add ${WORKSTATION_IP}/32 dev lo
+sudo ip addr add ${HOST_IP}/32 dev lo
 
 echo "net.ipv4.ip_forward=1" | sudo tee -a /etc/sysctl.conf
 sudo sysctl -p
@@ -48,11 +61,13 @@ chown stack:stack /opt/stack/devstack/local.conf
 
 #### Install Openstack as stack user
 cd /opt/stack/devstack
-source /opt/stack/data/venv/bin/activate
-pip install --upgrade importlib_metadata
-pip install --upgrade setuptools
-deactivate
 
+sudo rm -rf /opt/stack/data/venv
+sudo -H -u stack python3 -m venv /opt/stack/data/venv
+sudo -H -u stack pip install -c /opt/stack/requirements/upper-constraints.txt -U os-testr
+
+
+sudo -H -u stack /opt/stack/data/venv/bin/python -m ensurepip --upgrade
 sudo -H -u stack /opt/stack/devstack/stack.sh
 
 #### Run OpenStack as stack user

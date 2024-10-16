@@ -3,6 +3,7 @@ variable "openstack_password" {}
 
 variable "prefix" {
   description = "This prefix will be included in the name."
+  default     = "gs"
 }
 
 variable "tenant_name" {
