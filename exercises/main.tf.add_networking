@@ -1,0 +1,80 @@
+locals {
+  images = yamldecode(file("${path.module}/images.yaml"))
+}
+
+resource "openstack_images_image_v2" "images" {
+  for_each = local.images
+
+  name             = each.key
+  image_source_url = each.value.image_source_url
+  container_format = each.value.container_format
+  disk_format      = each.value.disk_format
+
+  properties = each.value.properties
+}
+
+########################
+# Data Block
+########################
+data "openstack_networking_network_v2" "public_network" {
+  name = "public"
+}
+
+data "openstack_networking_network_v2" "shared_network" {
+  name = "shared"
+}
+
+data "openstack_networking_subnet_v2" "subnet_1" {
+  name       = "shared-subnet"
+  network_id = data.openstack_networking_network_v2.shared_network.id
+}
+########################
+
+
+# Router
+resource "openstack_networking_router_v2" "router_1" {
+  name                = "my_router"
+  admin_state_up      = true
+  external_network_id = data.openstack_networking_network_v2.public_network.id
+}
+
+resource "openstack_networking_router_interface_v2" "router_interface_1" {
+  router_id = openstack_networking_router_v2.router_1.id
+  subnet_id = data.openstack_networking_subnet_v2.subnet_1.id
+}
+
+resource "openstack_networking_secgroup_v2" "secgroup_1" {
+  name        = "secgroup_1"
+  description = "a security group"
+}
+
+# Allow ICMP (ping)
+resource "openstack_networking_secgroup_rule_v2" "allow_ping" {
+  direction         = "ingress"
+  ethertype         = "IPv4"
+  protocol          = "icmp"
+  remote_ip_prefix  = "0.0.0.0/0"
+  security_group_id = openstack_networking_secgroup_v2.secgroup_1.id
+}
+
+# Allow SSH
+resource "openstack_networking_secgroup_rule_v2" "ssh" {
+  direction         = "ingress"
+  ethertype         = "IPv4"
+  protocol          = "tcp"
+  port_range_min    = 22
+  port_range_max    = 22
+  remote_ip_prefix  = "0.0.0.0/0"
+  security_group_id = openstack_networking_secgroup_v2.secgroup_1.id
+}
+
+# Allow 80 service
+resource "openstack_networking_secgroup_rule_v2" "web" {
+  direction         = "ingress"
+  ethertype         = "IPv4"
+  protocol          = "tcp"
+  port_range_min    = 80
+  port_range_max    = 80
+  remote_ip_prefix  = "0.0.0.0/0"
+  security_group_id = openstack_networking_secgroup_v2.secgroup_1.id
+}
