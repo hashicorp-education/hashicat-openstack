@@ -1,116 +1,126 @@
-terraform {
-  required_providers {
-    google = {
-      source  = "hashicorp/google"
-      version = "=3.68.0"
-    }
-  }
+locals {
+  images = yamldecode(file("${path.module}/images.yaml"))
 }
 
-provider "google" {
-  project = var.project
-  region  = var.region
+resource "openstack_images_image_v2" "images" {
+  for_each = local.images
+
+  name             = each.key
+  image_source_url = each.value.image_source_url
+  container_format = each.value.container_format
+  disk_format      = each.value.disk_format
+
+  properties = each.value.properties
 }
 
-resource "google_compute_network" "hashicat" {
-  name                    = "${var.prefix}-vpc-${var.region}"
-  auto_create_subnetworks = false
+########################
+# Data Block
+########################
+data "openstack_networking_network_v2" "public_network" {
+  name = "public"
 }
 
-resource "google_compute_subnetwork" "hashicat" {
-  name          = "${var.prefix}-subnet"
-  region        = var.region
-  network       = google_compute_network.hashicat.self_link
-  ip_cidr_range = var.subnet_prefix
+data "openstack_networking_network_v2" "shared_network" {
+  name = "shared"
 }
 
-resource "google_compute_firewall" "http-server" {
-  name    = "${var.prefix}-default-allow-ssh-http"
-  network = google_compute_network.hashicat.self_link
+data "openstack_networking_subnet_v2" "subnet_1" {
+  name       = "shared-subnet"
+  network_id = data.openstack_networking_network_v2.shared_network.id
+}
+########################
 
-  allow {
-    protocol = "tcp"
-    ports    = ["22", "80"]
-  }
 
-  // Allow traffic from everywhere to instances with an http-server tag
-  source_ranges = ["0.0.0.0/0"]
-  target_tags   = ["http-server"]
+# Router
+resource "openstack_networking_router_v2" "router_1" {
+  name                = "my_router"
+  admin_state_up      = true
+  external_network_id = data.openstack_networking_network_v2.public_network.id
 }
 
-resource "tls_private_key" "ssh-key" {
-  algorithm = "ED25519"
+resource "openstack_networking_router_interface_v2" "router_interface_1" {
+  router_id = openstack_networking_router_v2.router_1.id
+  subnet_id = data.openstack_networking_subnet_v2.subnet_1.id
 }
 
-resource "google_compute_instance" "hashicat" {
-  name         = "${var.prefix}-hashicat"
-  zone         = "${var.region}-b"
-  machine_type = var.machine_type
-
-  boot_disk {
-    initialize_params {
-      image = "ubuntu-os-cloud/ubuntu-2204-lts"
-    }
-  }
-
-  network_interface {
-    subnetwork = google_compute_subnetwork.hashicat.self_link
-    access_config {
-    }
-  }
-
-  metadata = {
-    ssh-keys = "ubuntu:${chomp(tls_private_key.ssh-key.public_key_openssh)} terraform"
-  }
-
-  tags = ["http-server"]
-
-  labels = {
-    name = "hashicat"
-  }
-
+resource "openstack_networking_secgroup_v2" "secgroup_1" {
+  name        = "secgroup_1"
+  description = "a security group"
 }
 
-resource "null_resource" "configure-cat-app" {
-  depends_on = [
-    google_compute_instance.hashicat,
+# Allow ICMP (ping)
+resource "openstack_networking_secgroup_rule_v2" "allow_ping" {
+  direction         = "ingress"
+  ethertype         = "IPv4"
+  protocol          = "icmp"
+  remote_ip_prefix  = "0.0.0.0/0"
+  security_group_id = openstack_networking_secgroup_v2.secgroup_1.id
+}
+
+# Allow SSH
+resource "openstack_networking_secgroup_rule_v2" "ssh" {
+  direction         = "ingress"
+  ethertype         = "IPv4"
+  protocol          = "tcp"
+  port_range_min    = 22
+  port_range_max    = 22
+  remote_ip_prefix  = "0.0.0.0/0"
+  security_group_id = openstack_networking_secgroup_v2.secgroup_1.id
+}
+
+# Allow 80 service
+resource "openstack_networking_secgroup_rule_v2" "web" {
+  direction         = "ingress"
+  ethertype         = "IPv4"
+  protocol          = "tcp"
+  port_range_min    = 80
+  port_range_max    = 80
+  remote_ip_prefix  = "0.0.0.0/0"
+  security_group_id = openstack_networking_secgroup_v2.secgroup_1.id
+}
+
+resource "openstack_compute_keypair_v2" "test-keypair" {
+  name = "my-keypair"
+}
+
+resource "local_file" "ssh_private_key" {
+  content         = openstack_compute_keypair_v2.test-keypair.private_key
+  file_permission = "0600"
+  filename        = "openstack_ssh_private"
+}
+
+resource "openstack_compute_instance_v2" "instance01" {
+  name     = "instance01"
+  image_id = openstack_images_image_v2.images["Ubuntu-24.04-noble"].id
+  #image_name  = "CentOS7"
+  flavor_name = "m1.small"
+  key_pair    = openstack_compute_keypair_v2.test-keypair.name
+  security_groups = [
+    openstack_networking_secgroup_v2.secgroup_1.name
   ]
 
-  triggers = {
-    build_number = timestamp()
+  metadata = {
+    server = "web",
+    color  = "blue"
   }
 
-  provisioner "file" {
-    source      = "files/"
-    destination = "/home/ubuntu/"
-
-    connection {
-      type        = "ssh"
-      user        = "ubuntu"
-      timeout     = "300s"
-      private_key = tls_private_key.ssh-key.private_key_pem
-      host        = google_compute_instance.hashicat.network_interface.0.access_config.0.nat_ip
-    }
+  network {
+    name = data.openstack_networking_network_v2.shared_network.name
   }
+}
 
-  provisioner "remote-exec" {
-    inline = [
-      "sudo apt -y update",
-      "sleep 15",
-      "sudo apt -y update",
-      "sudo apt -y install apache2",
-      "sudo systemctl start apache2",
-      "sudo chown -R ubuntu:ubuntu /var/www/html",
-      "chmod +x *.sh",
-      "PLACEHOLDER=${var.placeholder} WIDTH=${var.width} HEIGHT=${var.height} PREFIX=${var.prefix} ./deploy_app.sh",
-    ]
+# Floating IP
+resource "openstack_networking_floatingip_v2" "floatip_1" {
+  pool = data.openstack_networking_network_v2.public_network.name
+}
 
-    connection {
-      type        = "ssh"
-      user        = "ubuntu"
-      timeout     = "300s"
-      private_key = tls_private_key.ssh-key.private_key_pem
-      host        = google_compute_instance.hashicat.network_interface.0.access_config.0.nat_ip
-    }
-  }
+data "openstack_networking_port_v2" "port_1" {
+  device_id  = openstack_compute_instance_v2.instance01.id
+  network_id = openstack_compute_instance_v2.instance01.network.0.uuid
+}
+
+# Floating IP를 Port에 연결
+resource "openstack_networking_floatingip_associate_v2" "fip_assoc_1" {
+  floating_ip = openstack_networking_floatingip_v2.floatip_1.address
+  port_id     = data.openstack_networking_port_v2.port_1.id
 }
