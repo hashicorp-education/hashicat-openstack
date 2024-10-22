@@ -5,24 +5,18 @@ CentOS7:
     disk_format: qcow2
     properties:
         key: os
-# Ubuntu-18.04-bionic:
-#     image_source_url: "https://cloud-images.ubuntu.com/bionic/current/bionic-server-cloudimg-amd64.img"
-#     container_format: bare
-#     disk_format: qcow2
-#     properties:
-#         key: os
-# Ubuntu-20.04-focal:
-#     image_source_url: "https://cloud-images.ubuntu.com/focal/current/focal-server-cloudimg-amd64.img"
-#     container_format: bare
-#     disk_format: qcow2
-#     properties:
-#         key: os
-# Ubuntu-22.04-jammy:
-#     image_source_url: "https://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-amd64.img"
-#     container_format: bare
-#     disk_format: qcow2
-#     properties:
-#         key: os
+Ubuntu-20.04-focal:
+    image_source_url: "https://cloud-images.ubuntu.com/focal/current/focal-server-cloudimg-amd64.img"
+    container_format: bare
+    disk_format: qcow2
+    properties:
+        key: os
+Ubuntu-22.04-jammy:
+    image_source_url: "https://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-amd64.img"
+    container_format: bare
+    disk_format: qcow2
+    properties:
+        key: os
 Ubuntu-24.04-noble:
     image_source_url: "https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img"
     container_format: bare

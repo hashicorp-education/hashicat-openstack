@@ -1,0 +1,14 @@
+locals {
+  images = yamldecode(file("${path.module}/images.yaml"))
+}
+
+resource "openstack_images_image_v2" "images" {
+  for_each = local.images
+
+  name             = each.key
+  image_source_url = each.value.image_source_url
+  container_format = each.value.container_format
+  disk_format      = each.value.disk_format
+
+  properties = each.value.properties
+}
