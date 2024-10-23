@@ -5,3 +5,6 @@ output "private_address" {
 output "floating_address" {
   value = openstack_networking_floatingip_v2.floatip_1.address
 }
+output "instance_created_at" {
+  value = openstack_compute_instance_v2.instance01.created
+}

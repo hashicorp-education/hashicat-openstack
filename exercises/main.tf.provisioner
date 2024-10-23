@@ -148,20 +148,22 @@ resource "terraform_data" "configure_api" {
 
   provisioner "file" {
     source      = "files/"
-    destination = "/home/ubuntu/"
+    destination = "/tmp/"
   }
 
   provisioner "remote-exec" {
     inline = [
+      "sudo mv /tmp/static-web-server.service /etc/systemd/system/static-web-server.service",
+      "sudo systemctl daemon-reload",
+      "sudo systemctl stop static-web-server",
+      "cp /tmp/static-web-server /home/ubuntu",
+      "cp /tmp/deploy_app.sh /home/ubuntu",
       "chmod +x static-web-server",
       "chmod +x *.sh",
       "mkdir -p /home/ubuntu/www",
       "chown -R ubuntu:ubuntu /home/ubuntu/www",
-      "sudo mv static-web-server.service /etc/systemd/system/static-web-server.service",
       "PLACEHOLDER=${var.placeholder} ./deploy_app.sh",
-      "sudo systemctl daemon-reload",
-      "sudo systemctl enable static-web-server",
-      "sudo systemctl start static-web-server"
+      "sudo systemctl start static-web-server",
     ]
   }
 }
