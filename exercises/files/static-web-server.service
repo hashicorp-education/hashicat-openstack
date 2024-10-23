@@ -1,0 +1,13 @@
+[Unit]
+Description=Static Web Server
+After=network.target
+
+[Service]
+ExecStart=/home/ubuntu/static-web-server --port 80 --root /home/ubuntu/www
+WorkingDirectory=/home/ubuntu/www
+Restart=always
+User=root
+Group=root
+
+[Install]
+WantedBy=multi-user.target
