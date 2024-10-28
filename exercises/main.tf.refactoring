@@ -9,6 +9,7 @@ resource "openstack_images_image_v2" "images" {
   image_source_url = each.value.image_source_url
   container_format = each.value.container_format
   disk_format      = each.value.disk_format
+  image_cache_path = "/tmp/image_cache"
 
   properties = each.value.properties
 }

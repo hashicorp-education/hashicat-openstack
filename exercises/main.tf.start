@@ -3,6 +3,7 @@ resource "openstack_images_image_v2" "cent os" {
   image_source_url = "https://cloud.centos.org/centos/7/images/CentOS-7-x86_64-GenericCloud-2003.qcow2.xz"
   container_format = "bare"
   disk_format      = "qcow2"
+  image_cache_path = "/tmp/image_cache"
 
   properties = {
     key = "os"
