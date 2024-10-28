@@ -1,6 +1,6 @@
 output "info" {
   value = {
-    ssh = "ssh -i ./ssh_private ubuntu@${aws_instance.openstack.public_ip}"
+    ssh = "ssh -i ../terraform-code/bashtion_ssh_private ubuntu@${aws_instance.openstack.public_ip}"
     console   = "http://${aws_instance.openstack.public_ip}"
     password  = nonsensitive(random_password.password.result)
   }

@@ -142,7 +142,7 @@ resource "terraform_data" "configure_api" {
     private_key         = openstack_compute_keypair_v2.test-keypair.private_key
     host                = openstack_networking_floatingip_v2.floatip_1.address
     bastion_user        = "ubuntu"
-    bastion_private_key = file("${path.module}/../setup-openstack/ssh_private")
+    bastion_private_key = file("${path.module}/bashtion_ssh_private")
     bastion_host        = element(regex("(\\d+\\.\\d+\\.\\d+\\.\\d+)", var.openstack_url), 0)
   }
 
@@ -189,7 +189,7 @@ resource "terraform_data" "check_api" {
       type        = "ssh"
       timeout     = "300s"
       user        = "ubuntu"
-      private_key = file("${path.module}/../setup-openstack/ssh_private")
+      private_key = file("${path.module}/bashtion_ssh_private")
       host        = element(regex("(\\d+\\.\\d+\\.\\d+\\.\\d+)", var.openstack_url), 0)
     }
   }
