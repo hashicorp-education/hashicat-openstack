@@ -102,7 +102,7 @@ resource "tls_private_key" "ssh" {
 
 resource "local_sensitive_file" "ssh_private" {
   content  = tls_private_key.ssh.private_key_pem
-  filename = "${path.module}/../terraform-code/bashtion_ssh_private"
+  filename = "${path.module}/../terraform-code/bastion_ssh_private"
 }
 
 resource "random_id" "key_id" {
