@@ -162,7 +162,7 @@ resource "terraform_data" "configure_api" {
       "chmod +x *.sh",
       "mkdir -p /home/ubuntu/www",
       "chown -R ubuntu:ubuntu /home/ubuntu/www",
-      "PLACEHOLDER=${var.placeholder} ./deploy_app.sh",
+      "PLACEHOLDER=\"${var.placeholder}\" ./deploy_app.sh",
       "sudo systemctl start static-web-server",
     ]
   }
