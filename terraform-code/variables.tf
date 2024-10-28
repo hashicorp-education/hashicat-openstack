@@ -14,3 +14,9 @@ variable "placeholder" {
   description = "This placeholder will be used to create a api resource"
   default     = "hello"
 }
+
+variable "instance_count" {
+  description = "Instance Count Number"
+  type        = number
+  default     = 1
+}
