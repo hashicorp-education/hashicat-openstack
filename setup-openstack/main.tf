@@ -213,5 +213,5 @@ resource "local_file" "openstack_info_tfvars" {
     openstack_url = "http://${aws_instance.openstack.public_ip}:80"
     openstack_password = "${random_password.password.result}"
   EOF
-  filename = "${path.module}/../intro-to-terraform-on-openstack/openstack_info.auto.tfvars"
+  filename = "${path.module}/../terraform-code/openstack_info.auto.tfvars"
 }
