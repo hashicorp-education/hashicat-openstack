@@ -1,4 +1,4 @@
-resource "openstack_images_image_v2" "cent os" {
+resource "openstack_images_image_v2" "centos" {
   name             = "${var.prefix}-CentOS7"
   image_source_url = "https://cloud.centos.org/centos/7/images/CentOS-7-x86_64-GenericCloud-2003.qcow2.xz"
   container_format = "bare"
