@@ -94,6 +94,15 @@ resource "aws_security_group_rule" "openstack_object_store" {
   security_group_id = aws_security_group.example.id
 }
 
+resource "aws_security_group_rule" "openstack_instance_console" {
+  type              = "ingress"
+  from_port         = 6080
+  to_port           = 6080
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"]
+  security_group_id = aws_security_group.example.id
+}
+
 // key pair
 resource "tls_private_key" "ssh" {
   algorithm = "RSA"
