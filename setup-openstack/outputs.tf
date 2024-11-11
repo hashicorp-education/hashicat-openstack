@@ -1,3 +1,6 @@
+# Copyright (c) HashiCorp, Inc.
+# SPDX-License-Identifier: MPL-2.0
+
 output "info" {
   value = {
     ssh = "ssh -i ../terraform-code/bastion_ssh_private ubuntu@${aws_instance.openstack.public_ip}"
